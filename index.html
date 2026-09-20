@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusCare — Smart Campus Issue Reporting</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f7fb;color:#172033}
+header{background:#172554;color:white;padding:16px 6%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+.logo{font-size:22px;font-weight:800}.tag{font-size:12px;opacity:.8}
+main{max-width:1120px;margin:auto;padding:25px 18px}
+.hero{background:linear-gradient(135deg,#312e81,#0f766e);color:white;border-radius:22px;padding:35px;margin-bottom:22px}
+.hero h1{font-size:38px;margin:0 0 10px}.hero p{max-width:720px;line-height:1.6}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:white;border-radius:18px;padding:23px;box-shadow:0 8px 25px #17203312}
+label{display:block;font-size:13px;font-weight:700;margin:13px 0 7px}input,select,textarea{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font:inherit}textarea{min-height:90px;resize:vertical}
+button{border:0;border-radius:10px;padding:12px 16px;background:#4f46e5;color:white;font-weight:800;cursor:pointer;margin-top:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}.stat{background:white;border-radius:15px;padding:17px;box-shadow:0 5px 18px #17203310}.stat b{font-size:26px;display:block;margin-top:4px}
+.issue{border:1px solid #e4e7ec;border-radius:13px;padding:15px;margin-top:12px}.issue-top{display:flex;justify-content:space-between;gap:10px}.badge{font-size:11px;font-weight:800;padding:5px 9px;border-radius:20px;background:#eef2ff;color:#4338ca}.resolved{background:#ecfdf3;color:#047857}.progress{height:8px;background:#eef2f6;border-radius:10px;margin-top:12px;overflow:hidden}.bar{height:100%;background:#4f46e5;border-radius:10px}
+.small{font-size:12px;color:#667085}.hidden{display:none}
+@media(max-width:750px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.hero h1{font-size:30px}}
+</style>
+</head>
+<body>
+<header><div class="logo">🏫 CampusCare</div><div class="tag">HACKDAY 1.0 • Tech for a Better Tomorrow</div></header>
+<main>
+<section class="hero">
+<h1>Make Your Campus Better.</h1>
+<p>Report campus problems in seconds, track progress, and help administrators prioritize issues that affect students and staff.</p>
+</section>
+
+<div class="stats">
+<div class="stat">Open Issues<b id="openCount">0</b></div>
+<div class="stat">Resolved<b id="resolvedCount">0</b></div>
+<div class="stat">Impact Score<b id="impact">0</b></div>
+</div>
+
+<div class="grid">
+<section class="card">
+<h2>Report an Issue</h2>
+<label>Issue category</label>
+<select id="category"><option>Infrastructure</option><option>Cleanliness</option><option>Electrical</option><option>Water</option><option>Safety</option><option>Internet / Wi-Fi</option></select>
+<label>Location</label>
+<input id="location" placeholder="e.g. Block A, Room 204">
+<label>Priority</label>
+<select id="priority"><option>Low</option><option>Medium</option><option>High</option></select>
+<label>Description</label>
+<textarea id="description" placeholder="Describe the problem..."></textarea>
+<button onclick="reportIssue()">Submit Issue</button>
+<p class="small">Prototype demo: reports are stored locally in this browser.</p>
+</section>
+
+<section class="card">
+<h2>Smart Campus Feed</h2>
+<div id="feed"></div>
+</section>
+</div>
+
+<section class="card" style="margin-top:20px">
+<h2>How CampusCare Works</h2>
+<div class="grid">
+<div><b>1. Report</b><p class="small">Students or staff submit a problem with category, location and priority.</p></div>
+<div><b>2. Prioritize</b><p class="small">The dashboard highlights high-priority problems for faster attention.</p></div>
+<div><b>3. Track</b><p class="small">Everyone can see the status and progress of reported issues.</p></div>
+<div><b>4. Improve</b><p class="small">Issue history helps campus teams identify recurring problems.</p></div>
+</div>
+</section>
+</main>
+
+<script>
+let issues=JSON.parse(localStorage.getItem("campuscareIssues")||"[]");
+function seed(){
+ if(!issues.length){
+  issues=[
+   {cat:"Cleanliness",loc:"Canteen",priority:"High",desc:"Waste bins are overflowing.",status:"Open"},
+   {cat:"Infrastructure",loc:"Block B Staircase",priority:"Medium",desc:"One staircase light is not working.",status:"In Progress"},
+   {cat:"Internet / Wi-Fi",loc:"Library",priority:"Low",desc:"Wi-Fi signal is weak near the reading area.",status:"Resolved"}
+  ];
+ }
+}
+function save(){localStorage.setItem("campuscareIssues",JSON.stringify(issues))}
+function reportIssue(){
+ const cat=document.getElementById("category").value, loc=document.getElementById("location").value.trim();
+ const priority=document.getElementById("priority").value, desc=document.getElementById("description").value.trim();
+ if(!loc||!desc){alert("Please enter the location and description.");return}
+ issues.unshift({cat,loc,priority,desc,status:"Open"});
+ save(); render();
+ document.getElementById("location").value="";document.getElementById("description").value="";
+}
+function changeStatus(i){
+ issues[i].status=issues[i].status==="Open"?"In Progress":issues[i].status==="In Progress"?"Resolved":"Resolved";
+ save();render();
+}
+function render(){
+ let open=issues.filter(x=>x.status!=="Resolved").length, resolved=issues.filter(x=>x.status==="Resolved").length;
+ document.getElementById("openCount").textContent=open;
+ document.getElementById("resolvedCount").textContent=resolved;
+ document.getElementById("impact").textContent=Math.min(100,issues.length*12+resolved*8);
+ document.getElementById("feed").innerHTML=issues.map((x,i)=>{
+  let progress=x.status==="Resolved"?100:x.status==="In Progress"?55:15;
+  let cls=x.status==="Resolved"?"badge resolved":"badge";
+  return `<div class="issue">
+   <div class="issue-top"><div><b>${x.cat}</b><div class="small">📍 ${x.loc}</div></div><span class="${cls}">${x.status}</span></div>
+   <p>${x.desc}</p><div class="small">Priority: <b>${x.priority}</b></div>
+   <div class="progress"><div class="bar" style="width:${progress}%"></div></div>
+   ${x.status!=="Resolved"?`<button onclick="changeStatus(${i})">Update Status</button>`:""}
+  </div>`
+ }).join("");
+}
+seed();save();render();
+</script>
+</body>
+</html>
